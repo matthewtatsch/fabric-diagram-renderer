@@ -57,10 +57,19 @@ graph LR
     %% Connections
     SRC ==> ES
     ES ==> EH
+    EH ==> NB
     NB --> LH
     LH -.-> SM
     SM -.-> RPT
 ```
+
+**Rendered output (light theme):**
+
+![Example diagram – light theme](docs/example_light.svg)
+
+**Rendered output (dark theme):**
+
+![Example diagram – dark theme](docs/example_dark.svg)
 
 ### Supported Item Types
 
