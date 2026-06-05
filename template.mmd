@@ -1,0 +1,21 @@
+graph LR
+    %% External data sources (use Unicode codepoints for emoji icons)
+    SRC[My Data Source]:::U1F4E6
+
+    %% Fabric workspace — use :::Workspace on the subgraph
+    subgraph MyWorkspace:::Workspace
+        direction LR
+        NB[Transform Notebook]:::Notebook
+        LH[Bronze Lakehouse]:::Lakehouse
+        EH[Analytics Eventhouse]:::Eventhouse
+        ES[Ingestion Stream]:::Eventstream
+        SM[Sales Model]:::SemanticModel
+        RPT[Sales Report]:::Report
+    end
+
+    %% Connections: ==> solid thick, --> solid, -.-> dashed
+    SRC ==> ES
+    ES ==> EH
+    NB --> LH
+    LH -.-> SM
+    SM -.-> RPT

@@ -1,0 +1,33 @@
+{
+  "name": "fabric-diagram-renderer",
+  "version": "1.0.0",
+  "description": "Render Mermaid diagrams with Microsoft Fabric styling — icons, shadows, gradients",
+  "type": "module",
+  "bin": {
+    "fabric-diagram": "./cli.mjs"
+  },
+  "scripts": {
+    "render": "tsx render.ts",
+    "generate-icons": "tsx generate-icons.ts",
+    "postinstall": "tsx generate-icons.ts"
+  },
+  "files": [
+    "cli.mjs",
+    "render.ts",
+    "enhance.ts",
+    "generate-icons.ts",
+    "fabric-items.ts",
+    "template.mmd",
+    "tsconfig.json",
+    "data/"
+  ],
+  "keywords": ["fabric", "mermaid", "diagram", "svg", "architecture"],
+  "license": "MIT",
+  "dependencies": {
+    "@fabric-msft/svg-icons": "^8.0.1",
+    "mermaid": "^11.4.0",
+    "puppeteer": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
