@@ -1,0 +1,26 @@
+graph TD
+    %% Capacity organization by environment
+    TENANT[Contoso Tenant]:::U1F3E2
+
+    subgraph DevCapacity[Dev Capacity · F2]:::Capacity
+        direction TB
+        DWS1[Sales Dev]:::Workspace
+        DWS2[Finance Dev]:::Workspace
+        DWS3[Sandbox]:::Workspace
+    end
+
+    subgraph TestCapacity[Test Capacity · F4]:::Capacity
+        direction TB
+        TWS1[Sales Test]:::Workspace
+        TWS2[Finance Test]:::Workspace
+    end
+
+    subgraph ProdCapacity[Prod Capacity · F64]:::Capacity
+        direction TB
+        PWS1[Sales Prod]:::Workspace
+        PWS2[Finance Prod]:::Workspace
+    end
+
+    TENANT ==> DevCapacity
+    TENANT ==> TestCapacity
+    TENANT ==> ProdCapacity

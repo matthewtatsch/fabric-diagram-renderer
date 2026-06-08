@@ -95,6 +95,42 @@ graph LR
 | `Environment` | Environment |
 | `UserDataFunction` | User Data Function |
 | `Workspace` | Workspace (subgraph) |
+| `Capacity` | Capacity (subgraph container) |
+
+### Capacity & Workspace Subgraphs
+
+Use `:::Capacity` on a subgraph to render it as a Fabric Capacity container (dashed border). Workspaces inside can be either **subgraphs** (when showing artifacts) or **nodes** (for org-chart style diagrams).
+
+**Workspaces as nodes** (compact, no artifacts shown — see [examples/capacity-org.mmd](examples/capacity-org.mmd)):
+
+```text
+graph TD
+    subgraph ProdCapacity[Prod Capacity · F64]:::Capacity
+        direction TB
+        WS1[Sales Prod]:::Workspace
+        WS2[Finance Prod]:::Workspace
+    end
+```
+
+![Capacity org chart – light](examples/capacity-org_light.svg)
+
+**Workspaces as subgraphs** (showing artifacts inside — see [examples/capacity-example.mmd](examples/capacity-example.mmd)):
+
+```text
+graph LR
+    subgraph ProdCapacity:::Capacity
+        direction LR
+        subgraph SalesWorkspace:::Workspace
+            direction LR
+            PL[Ingest Pipeline]:::DataPipeline
+            LH[Sales Lakehouse]:::Lakehouse
+        end
+    end
+```
+
+![Capacity with nested workspaces – light](examples/capacity-example_light.svg)
+
+> **Note:** The `ID[Display Label]:::Class` syntax is supported for custom display names on subgraphs (e.g., `subgraph ProdCap[Prod Capacity · F64]:::Capacity`).
 
 ### Emoji/Unicode Icons (for external nodes)
 

@@ -325,12 +325,33 @@ export function enhanceDiagram(
   let sgMatch: RegExpExecArray | null;
   while ((sgMatch = sgRegex.exec(chart)) !== null) {
     const raw = sgMatch[1].trim();
-    const typeMatch = raw.match(/^(.+?):::(\w+)$/);
-    if (typeMatch) {
-      const title = typeMatch[1].trim();
-      subgraphMap.set(title.toLowerCase(), { title, itemType: typeMatch[2] });
+    // Handle: subgraph ID[Label]:::Class
+    const bracketClassMatch = raw.match(/^(\w+)\[([^\]]*)\]:::(\w+)$/);
+    if (bracketClassMatch) {
+      const [, id, label, itemType] = bracketClassMatch;
+      const displayTitle = label.trim() || id;
+      const info: SubgraphInfo = { title: displayTitle, itemType };
+      subgraphMap.set(id.toLowerCase(), info);
+      if (label.trim()) subgraphMap.set(label.trim().toLowerCase(), info);
     } else {
-      subgraphMap.set(raw.toLowerCase(), { title: raw, itemType: null });
+      // Handle: subgraph ID:::Class  or  subgraph Title
+      const typeMatch = raw.match(/^(.+?):::(\w+)$/);
+      if (typeMatch) {
+        const title = typeMatch[1].trim();
+        subgraphMap.set(title.toLowerCase(), { title, itemType: typeMatch[2] });
+      } else {
+        // Handle: subgraph ID[Label]
+        const bracketMatch = raw.match(/^(\w+)\[([^\]]*)\]$/);
+        if (bracketMatch) {
+          const [, id, label] = bracketMatch;
+          const displayTitle = label.trim() || id;
+          const info: SubgraphInfo = { title: displayTitle, itemType: null };
+          subgraphMap.set(id.toLowerCase(), info);
+          if (label.trim()) subgraphMap.set(label.trim().toLowerCase(), info);
+        } else {
+          subgraphMap.set(raw.toLowerCase(), { title: raw, itemType: null });
+        }
+      }
     }
   }
 
