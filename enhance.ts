@@ -320,34 +320,145 @@ export function enhanceDiagram(
 
   // ── Subgraph / cluster styling ──────────────────────────────────────
   interface SubgraphInfo { title: string; itemType: string | null; }
-  const subgraphDefs: SubgraphInfo[] = [];
+  const subgraphMap = new Map<string, SubgraphInfo>();
   const sgRegex = /subgraph\s+(.+)/g;
   let sgMatch: RegExpExecArray | null;
   while ((sgMatch = sgRegex.exec(chart)) !== null) {
     const raw = sgMatch[1].trim();
     const typeMatch = raw.match(/^(.+?):::(\w+)$/);
     if (typeMatch) {
-      subgraphDefs.push({ title: typeMatch[1].trim(), itemType: typeMatch[2] });
+      const title = typeMatch[1].trim();
+      subgraphMap.set(title.toLowerCase(), { title, itemType: typeMatch[2] });
     } else {
-      subgraphDefs.push({ title: raw, itemType: null });
+      subgraphMap.set(raw.toLowerCase(), { title: raw, itemType: null });
     }
   }
 
   const SG_ICON = 26;
   const SG_HEADER_H = 54;
 
-  root.querySelectorAll('g.cluster').forEach((clusterG, idx) => {
-    const rect = clusterG.querySelector('rect') as SVGRectElement | null;
-    if (!rect) return;
+  // Determine nesting depth of each subgraph from the source chart.
+  // Parse subgraph open/close to figure out which are parents.
+  const sgNestDepth = new Map<string, number>();
+  {
+    let depth = 0;
+    const lines = chart.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed === 'end') {
+        depth--;
+      } else {
+        const sgLine = trimmed.match(/^subgraph\s+(.+)/);
+        if (sgLine) {
+          const raw = sgLine[1].trim();
+          const typeM = raw.match(/^(.+?):::(\w+)$/);
+          const name = typeM ? typeM[1].trim() : raw;
+          sgNestDepth.set(name.toLowerCase(), depth);
+          depth++;
+        }
+      }
+    }
+  }
 
-    rect.setAttribute('rx', '10');
-    rect.setAttribute('ry', '10');
-    rect.removeAttribute('stroke-dasharray');
-    const sgFill = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.025)';
-    const sgStroke = isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.12)';
-    rect.style.cssText = `fill:${sgFill};stroke:${sgStroke};stroke-width:1.5px`;
+  // All g.cluster elements are siblings in Mermaid's output (not DOM-nested).
+  const clusters = Array.from(root.querySelectorAll('g.cluster'));
 
-    const sgInfo = subgraphDefs[subgraphDefs.length - 1 - idx];
+  // Two-pass approach:
+  // Pass 1: Clear labels, style rects, expand rects upward for header space.
+  // Pass 2: Position labels above expanded rects.
+  interface ClusterWork {
+    clusterG: Element;
+    sgInfo: SubgraphInfo | undefined;
+    isCapacity: boolean;
+    rectEl: SVGRectElement;
+    labelG: SVGGElement | null;
+  }
+  const work: ClusterWork[] = [];
+
+  // Pass 1: expand rects
+  clusters.forEach((clusterG) => {
+    // Get the direct rect child (not rects in nested clusters)
+    const allRects = clusterG.querySelectorAll('rect');
+    let rectEl: SVGRectElement | null = null;
+    for (let i = 0; i < allRects.length; i++) {
+      if (allRects[i].parentElement === clusterG) {
+        rectEl = allRects[i] as SVGRectElement;
+        break;
+      }
+    }
+    if (!rectEl) return;
+
+    // Match cluster to subgraph definition by its label text or ID
+    let sgInfo: SubgraphInfo | undefined;
+    const labelEl = clusterG.querySelector('.cluster-label span, .cluster-label text, .cluster-label foreignObject');
+    const labelText = labelEl?.textContent?.trim() ?? '';
+    if (labelText) {
+      sgInfo = subgraphMap.get(labelText.toLowerCase());
+    }
+    // Fallback: try matching from cluster ID
+    if (!sgInfo) {
+      const clusterId = clusterG.getAttribute('id') ?? '';
+      for (const [key, info] of subgraphMap) {
+        if (clusterId.toLowerCase().includes(key)) {
+          sgInfo = info;
+          break;
+        }
+      }
+    }
+
+    // Clear label content BEFORE measuring (so it doesn't affect bbox)
+    let labelG: SVGGElement | null = null;
+    const allLabelGs = clusterG.querySelectorAll('.cluster-label');
+    for (let i = 0; i < allLabelGs.length; i++) {
+      if (allLabelGs[i].parentElement === clusterG) {
+        labelG = allLabelGs[i] as SVGGElement;
+        break;
+      }
+    }
+    if (labelG) labelG.innerHTML = '';
+
+    rectEl.setAttribute('rx', '10');
+    rectEl.setAttribute('ry', '10');
+    rectEl.removeAttribute('stroke-dasharray');
+
+    const isCapacity = sgInfo?.itemType?.toLowerCase() === 'capacity';
+
+    let sgStrokeStyle: string;
+    if (isCapacity) {
+      const sgFill = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)';
+      const sgStroke = isDark ? 'rgba(140,180,220,0.35)' : 'rgba(0,80,120,0.20)';
+      sgStrokeStyle = `fill:${sgFill};stroke:${sgStroke};stroke-width:2px;stroke-dasharray:8,4`;
+    } else {
+      const sgFill = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.025)';
+      const sgStroke = isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.12)';
+      sgStrokeStyle = `fill:${sgFill};stroke:${sgStroke};stroke-width:1.5px`;
+    }
+    rectEl.style.cssText = sgStrokeStyle;
+
+    // Use the rect's original bbox (Mermaid-computed dimensions)
+    const box = rectEl.getBBox();
+
+    // Determine how much header space this cluster needs.
+    // Parent clusters (depth 0) need extra offset to clear nested cluster headers.
+    const sgName = sgInfo?.title?.toLowerCase() ?? '';
+    const nestDepth = sgNestDepth.get(sgName) ?? 0;
+    // Each nesting level below adds SG_HEADER_H, so parents need extra offset
+    // to not overlap with child headers that also expand upward.
+    const maxDepth = Math.max(...Array.from(sgNestDepth.values()), 0);
+    const levelsBelow = maxDepth - nestDepth;
+    const headerOffset = SG_HEADER_H + (levelsBelow * SG_HEADER_H);
+
+    // Expand rect to cover content + header
+    rectEl.setAttribute('y', String(box.y - headerOffset));
+    rectEl.setAttribute('height', String(box.height + headerOffset));
+
+    work.push({ clusterG, sgInfo, isCapacity, rectEl, labelG });
+  });
+
+  // Pass 2: position labels (rects are now final)
+  work.forEach(({ clusterG, sgInfo, isCapacity, rectEl, labelG }) => {
+    if (!labelG) return;
+
     const sgTitle = sgInfo?.title ?? '';
     const sgType = sgInfo?.itemType ?? null;
 
@@ -356,66 +467,62 @@ export function enhanceDiagram(
       ? (ciGet(itemDisplayNames, ciDisplayNames, sgType) ?? sgType)
       : '';
 
-    const box = rect.getBBox();
+    // Read the final rect position
+    const rx = parseFloat(rectEl.getAttribute('x') || '0');
+    const ry = parseFloat(rectEl.getAttribute('y') || '0');
+    const rw = parseFloat(rectEl.getAttribute('width') || '0');
 
-    rect.setAttribute('y', String(box.y - SG_HEADER_H));
-    rect.setAttribute('height', String(box.height + SG_HEADER_H));
+    const labelX = rx + 16;
+    const labelY = ry;
 
-    const labelG = clusterG.querySelector('.cluster-label') as SVGGElement | null;
+    labelG.setAttribute('transform', `translate(${labelX},${labelY})`);
 
-    if (labelG) {
-      const labelX = box.x + 16;
-      const labelY = box.y - SG_HEADER_H;
-
-      labelG.innerHTML = '';
-      labelG.setAttribute('transform', `translate(${labelX},${labelY})`);
-
-      const iconY = Math.round((SG_HEADER_H - SG_ICON) / 2);
-      if (iconUri) {
-        labelG.appendChild(svgEl('image', {
-          href: iconUri,
-          width: String(SG_ICON), height: String(SG_ICON),
-          x: '0', y: String(iconY),
-        }));
-      }
-
-      const textLeftX = iconUri ? SG_ICON + 10 : 0;
-      const fo = document.createElementNS(SVG_NS, 'foreignObject');
-      fo.setAttribute('x', String(textLeftX));
-      fo.setAttribute('y', '0');
-      fo.setAttribute('width', String(box.width - 32 - textLeftX));
-      fo.setAttribute('height', String(SG_HEADER_H));
-
-      const titleColor = isDark ? '#e0e0e0' : '#242424';
-      const typeHtml = sgType && typeName
-        ? `<div style="font-weight:500;font-size:11px;line-height:1;color:${TYPE_COLOR};margin-top:-1px">${typeName}</div>`
-        : '';
-
-      fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" style="
-        display:flex;flex-direction:column;justify-content:center;
-        height:100%;width:100%;box-sizing:border-box;
-        text-align:left;
-      ">
-        <div style="font-family:Consolas,'Courier New',monospace;font-weight:600;font-size:14px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${titleColor}">${sgTitle}</div>
-        ${typeHtml}
-      </div>`;
-      labelG.appendChild(fo);
-
-      // Horizontal divider
-      const lineY = SG_HEADER_H;
-      labelG.appendChild(svgEl('line', {
-        x1: String(-16),
-        y1: String(lineY),
-        x2: String(box.width - 16),
-        y2: String(lineY),
-        stroke: isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.10)',
-        'stroke-width': '1',
+    const iconY = Math.round((SG_HEADER_H - SG_ICON) / 2);
+    if (iconUri) {
+      labelG.appendChild(svgEl('image', {
+        href: iconUri,
+        width: String(SG_ICON), height: String(SG_ICON),
+        x: '0', y: String(iconY),
       }));
     }
+
+    const textLeftX = iconUri ? SG_ICON + 10 : 0;
+    const fo = document.createElementNS(SVG_NS, 'foreignObject');
+    fo.setAttribute('x', String(textLeftX));
+    fo.setAttribute('y', '0');
+    fo.setAttribute('width', String(rw - 32 - textLeftX));
+    fo.setAttribute('height', String(SG_HEADER_H));
+
+    const titleColor = isDark ? '#e0e0e0' : '#242424';
+    const typeHtml = sgType && typeName
+      ? `<div style="font-weight:500;font-size:11px;line-height:1;color:${TYPE_COLOR};margin-top:-1px">${typeName}</div>`
+      : '';
+
+    fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" style="
+      display:flex;flex-direction:column;justify-content:center;
+      height:100%;width:100%;box-sizing:border-box;
+      text-align:left;
+    ">
+      <div style="font-family:Consolas,'Courier New',monospace;font-weight:600;font-size:14px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${titleColor}">${sgTitle}</div>
+      ${typeHtml}
+    </div>`;
+    labelG.appendChild(fo);
+
+    // Horizontal divider
+    const lineY = SG_HEADER_H;
+    labelG.appendChild(svgEl('line', {
+      x1: String(-16),
+      y1: String(lineY),
+      x2: String(rw - 16),
+      y2: String(lineY),
+      stroke: isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.10)',
+      'stroke-width': '1',
+    }));
   });
 
   // Expand viewBox
-  const sgExtra = subgraphDefs.length > 0 ? SG_HEADER_H : 0;
+  const maxNestDepth = sgNestDepth.size > 0 ? Math.max(...Array.from(sgNestDepth.values())) : 0;
+  const sgExtra = subgraphMap.size > 0 ? SG_HEADER_H * (maxNestDepth + 1) : 0;
   if (expandViewBox) {
     const vb = root.getAttribute('viewBox');
     if (vb) {

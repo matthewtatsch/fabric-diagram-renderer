@@ -1,0 +1,33 @@
+graph LR
+    %% External sources
+    ERP[ERP System]:::U1F4E6
+    CRM[CRM Platform]:::U1F4E6
+
+    %% Fabric Capacity — outer subgraph wrapping workspaces
+    subgraph ProdCapacity:::Capacity
+        direction LR
+
+        subgraph IngestionWorkspace:::Workspace
+            direction LR
+            PL[Ingest Pipeline]:::DataPipeline
+            ES[Event Stream]:::Eventstream
+            NB1[Transform Notebook]:::Notebook
+        end
+
+        subgraph AnalyticsWorkspace:::Workspace
+            direction LR
+            LH[Gold Lakehouse]:::Lakehouse
+            EH[Eventhouse]:::Eventhouse
+            SM[Sales Model]:::SemanticModel
+            RPT[Sales Report]:::Report
+        end
+    end
+
+    %% Connections
+    ERP ==> PL
+    CRM ==> ES
+    PL --> NB1
+    NB1 --> LH
+    ES ==> EH
+    LH -.-> SM
+    SM -.-> RPT

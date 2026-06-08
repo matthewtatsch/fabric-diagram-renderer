@@ -3,6 +3,7 @@
  * SVG icon filenames in @fabric-msft/svg-icons.
  */
 export const FABRIC_ITEM_ICON_MAP: Record<string, string> = {
+  Capacity: 'fabric_32_filled.svg',
   Workspace: 'fabric_32_color.svg',
   Notebook: 'notebook_32_item.svg',
   Lakehouse: 'lakehouse_32_item.svg',
@@ -31,6 +32,7 @@ export const FABRIC_ITEM_ICON_MAP: Record<string, string> = {
 };
 
 export const ITEM_DISPLAY_NAMES: Record<string, string> = {
+  Capacity: 'Capacity',
   Notebook: 'Notebook',
   Lakehouse: 'Lakehouse',
   Environment: 'Environment',
