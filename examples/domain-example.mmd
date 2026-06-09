@@ -1,0 +1,10 @@
+graph
+    subgraph SalesDomain[Sales Domain]:::Domain
+        SalesWorkspace[Sales Analytics]:::Workspace
+        MarketingWorkspace[Marketing]:::Workspace
+    end
+
+    subgraph FinanceDomain[Finance Domain]:::Domain
+        FinanceWorkspace[Finance Prod]:::Workspace
+        TreasuryWorkspace[Treasury]:::Workspace
+    end

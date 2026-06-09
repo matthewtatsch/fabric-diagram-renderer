@@ -4,6 +4,7 @@
  */
 export const FABRIC_ITEM_ICON_MAP: Record<string, string> = {
   Capacity: 'fabric_32_filled.svg',
+  Domain: 'fabric_32_filled.svg',
   Workspace: 'fabric_32_color.svg',
   Notebook: 'notebook_32_item.svg',
   Lakehouse: 'lakehouse_32_item.svg',
@@ -33,6 +34,7 @@ export const FABRIC_ITEM_ICON_MAP: Record<string, string> = {
 
 export const ITEM_DISPLAY_NAMES: Record<string, string> = {
   Capacity: 'Capacity',
+  Domain: 'Domain',
   Notebook: 'Notebook',
   Lakehouse: 'Lakehouse',
   Environment: 'Environment',

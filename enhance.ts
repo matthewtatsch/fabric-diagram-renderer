@@ -443,12 +443,17 @@ export function enhanceDiagram(
     rectEl.removeAttribute('stroke-dasharray');
 
     const isCapacity = sgInfo?.itemType?.toLowerCase() === 'capacity';
+    const isDomain = sgInfo?.itemType?.toLowerCase() === 'domain';
 
     let sgStrokeStyle: string;
     if (isCapacity) {
       const sgFill = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)';
       const sgStroke = isDark ? 'rgba(140,180,220,0.35)' : 'rgba(0,80,120,0.20)';
       sgStrokeStyle = `fill:${sgFill};stroke:${sgStroke};stroke-width:2px;stroke-dasharray:8,4`;
+    } else if (isDomain) {
+      const sgFill = isDark ? 'rgba(180,140,255,0.04)' : 'rgba(100,40,180,0.02)';
+      const sgStroke = isDark ? 'rgba(180,140,255,0.40)' : 'rgba(100,40,180,0.25)';
+      sgStrokeStyle = `fill:${sgFill};stroke:${sgStroke};stroke-width:2px`;
     } else {
       const sgFill = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.025)';
       const sgStroke = isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.12)';

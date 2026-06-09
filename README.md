@@ -96,12 +96,38 @@ graph LR
 | `UserDataFunction` | User Data Function |
 | `Workspace` | Workspace (subgraph) |
 | `Capacity` | Capacity (subgraph container) |
+| `Domain` | Domain (subgraph container) |
 
-### Capacity & Workspace Subgraphs
+### Domain, Capacity & Workspace Subgraphs
 
-Use `:::Capacity` on a subgraph to render it as a Fabric Capacity container (dashed border). Workspaces inside can be either **subgraphs** (when showing artifacts) or **nodes** (for org-chart style diagrams).
+Use `:::Domain` on a subgraph to render it as a Fabric Domain container (solid purple border). Domains group workspaces by business area or governance boundary.
 
-**Workspaces as nodes** (compact, no artifacts shown — see [examples/capacity-org.mmd](examples/capacity-org.mmd)):
+Use `:::Capacity` on a subgraph to render it as a Fabric Capacity container (dashed blue border).
+
+Workspaces inside these containers should be **nodes** (using `:::Workspace`), not nested subgraphs.
+
+> **⚠️ Limitation:** Do not nest subgraphs inside other subgraphs (e.g., a `:::Workspace` subgraph inside a `:::Domain` or `:::Capacity` subgraph). Mermaid's layout causes headers to overlap in nested subgraph scenarios. Instead, use workspace **nodes** inside container subgraphs — they render cleanly and are more compact.
+
+**Domain containing workspace nodes** (see [examples/domain-example.mmd](examples/domain-example.mmd)):
+
+```text
+graph LR
+    subgraph SalesDomain[Sales Domain]:::Domain
+        direction LR
+        SalesWorkspace[Sales Analytics]:::Workspace
+        MarketingWorkspace[Marketing]:::Workspace
+    end
+
+    subgraph FinanceDomain[Finance Domain]:::Domain
+        direction LR
+        FinanceWorkspace[Finance Prod]:::Workspace
+        TreasuryWorkspace[Treasury]:::Workspace
+    end
+```
+
+![Domain example – light](examples/domain-example_light.svg)
+
+**Capacity containing workspace nodes** (see [examples/capacity-org.mmd](examples/capacity-org.mmd)):
 
 ```text
 graph TD
@@ -113,22 +139,6 @@ graph TD
 ```
 
 ![Capacity org chart – light](examples/capacity-org_light.svg)
-
-**Workspaces as subgraphs** (showing artifacts inside — see [examples/capacity-example.mmd](examples/capacity-example.mmd)):
-
-```text
-graph LR
-    subgraph ProdCapacity:::Capacity
-        direction LR
-        subgraph SalesWorkspace:::Workspace
-            direction LR
-            PL[Ingest Pipeline]:::DataPipeline
-            LH[Sales Lakehouse]:::Lakehouse
-        end
-    end
-```
-
-![Capacity with nested workspaces – light](examples/capacity-example_light.svg)
 
 > **Note:** The `ID[Display Label]:::Class` syntax is supported for custom display names on subgraphs (e.g., `subgraph ProdCap[Prod Capacity · F64]:::Capacity`).
 

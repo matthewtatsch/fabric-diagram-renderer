@@ -21,13 +21,23 @@
     "tsconfig.json",
     "data/"
   ],
-  "keywords": ["fabric", "mermaid", "diagram", "svg", "architecture"],
+  "keywords": [
+    "fabric",
+    "mermaid",
+    "diagram",
+    "svg",
+    "architecture"
+  ],
   "license": "MIT",
   "dependencies": {
     "@fabric-msft/svg-icons": "^8.0.1",
+    "@mermaid-js/layout-elk": "^0.2.1",
     "mermaid": "^11.4.0",
     "puppeteer": "^24.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }
